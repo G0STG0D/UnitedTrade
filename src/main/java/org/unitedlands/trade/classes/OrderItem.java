@@ -1,8 +1,10 @@
 package org.unitedlands.trade.classes;
 
 import org.bukkit.Material;
+import org.bukkit.block.ShulkerBox;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.BlockStateMeta;
 import org.unitedlands.UnitedLib;
 
 public class OrderItem {
@@ -61,67 +63,95 @@ public class OrderItem {
         return maxAmount * price;
     }
 
-    public int missingAmount(PlayerInventory inventory) {
-        int total = 0;
+    public int missingAmount(Inventory inventory) {
         var itemFactory = UnitedLib.getInstance().getItemFactory();
-        var orderItemId = itemFactory.getFilterName(item);
-        for (ItemStack stack : inventory.getStorageContents()) {
-            if (stack != null && stack.getType() != Material.AIR) {
-                var itemId = itemFactory.getFilterName(stack);
-                if (itemId.equals(orderItemId)) {
-                    total += stack.getAmount();
-                }
-            }
-        }
-        return Math.max(0, minAmount - total);
+        var orderItemId = itemFactory.getFilterName(this.item);
+        int total = countMatching(inventory.getStorageContents(), orderItemId);
+        return Math.max(0, this.minAmount - total);
     }
 
-    public int removeFromInventory(PlayerInventory inventory) {
-
+    private int countMatching(ItemStack[] contents, String orderItemId) {
         var itemFactory = UnitedLib.getInstance().getItemFactory();
-        var orderItemId = itemFactory.getFilterName(item);
-
-        // First pass: count total available
         int total = 0;
-        for (ItemStack stack : inventory.getStorageContents()) {
-            if (stack != null && stack.getType() != Material.AIR) {
-                var itemId = itemFactory.getFilterName(stack);
-                if (itemId.equals(orderItemId)) {
-                    total += stack.getAmount();
-                }
+
+        for (ItemStack stack : contents) {
+            if (stack == null || stack.getType() == Material.AIR) {
+                continue;
+            }
+
+            var itemId = itemFactory.getFilterName(stack);
+            if (itemId.equals(orderItemId)) {
+                total += stack.getAmount();
+            }
+
+            if (stack.getItemMeta() instanceof BlockStateMeta blockStateMeta
+                    && blockStateMeta.getBlockState() instanceof ShulkerBox shulkerBox) {
+                total += countMatching(shulkerBox.getInventory().getContents(), orderItemId);
             }
         }
+        return total;
+    }
 
-        if (total < minAmount)
+    public int removeFromInventory(Inventory inventory) {
+        var itemFactory = UnitedLib.getInstance().getItemFactory();
+        var orderItemId = itemFactory.getFilterName(this.item);
+
+        ItemStack[] contents = inventory.getStorageContents();
+
+        // First pass: count total available (including inside shulker boxes)
+        int total = countMatching(contents, orderItemId);
+
+        if (total < this.minAmount)
             return -1;
 
         // Second pass: remove up to maxAmount
-        int remaining = Math.min(total, maxAmount);
+        int remaining = Math.min(total, this.maxAmount);
         int removed = remaining;
-        ItemStack[] contents = inventory.getStorageContents();
+
+        remaining = removeMatching(contents, orderItemId, remaining);
+
+        inventory.setStorageContents(contents);
+        return removed - remaining;
+    }
+
+    private int removeMatching(ItemStack[] contents, String orderItemId, int remaining) {
+        var itemFactory = UnitedLib.getInstance().getItemFactory();
 
         for (int i = 0; i < contents.length && remaining > 0; i++) {
             ItemStack stack = contents[i];
-            
+
             if (stack == null || stack.getType() == Material.AIR)
                 continue;
 
             var itemId = itemFactory.getFilterName(stack);
 
-            if (!itemId.equals(orderItemId))
-                continue;
+            if (itemId.equals(orderItemId)) {
+                if (stack.getAmount() <= remaining) {
+                    remaining -= stack.getAmount();
+                    contents[i] = null;
+                    continue;
+                } else {
+                    stack.setAmount(stack.getAmount() - remaining);
+                    remaining = 0;
+                    break;
+                }
+            }
 
-            if (stack.getAmount() <= remaining) {
-                remaining -= stack.getAmount();
-                contents[i] = null;
-            } else {
-                stack.setAmount(stack.getAmount() - remaining);
-                remaining = 0;
+            if (stack.getItemMeta() instanceof BlockStateMeta blockStateMeta
+                    && blockStateMeta.getBlockState() instanceof ShulkerBox shulkerBox) {
+
+                ItemStack[] shulkerContents = shulkerBox.getInventory().getContents();
+                int before = remaining;
+                remaining = removeMatching(shulkerContents, orderItemId, remaining);
+
+                if (remaining != before) {
+                    shulkerBox.getInventory().setContents(shulkerContents);
+                    blockStateMeta.setBlockState(shulkerBox);
+                    stack.setItemMeta(blockStateMeta);
+                }
             }
         }
 
-        inventory.setStorageContents(contents);
-        return removed;
+        return remaining;
     }
-
 }

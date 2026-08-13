@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.unitedlands.trade.UnitedTrade;
 import org.unitedlands.trade.classes.MessageProvider;
 import org.unitedlands.trade.classes.TradePoint;
+import org.unitedlands.trade.classes.events.TradePointOpenEvent;
 import org.unitedlands.trade.integrations.floodgate.FloodgateAPIIntegration;
 import org.unitedlands.trade.utils.TradeOrderBookUtil;
 import io.papermc.paper.dialog.Dialog;
@@ -48,6 +49,11 @@ public class LecternListener implements Listener {
             return;
 
         event.setCancelled(true);
+
+        var tradePointOpenEvent = new TradePointOpenEvent(event.getPlayer(), tradePoint);
+        tradePointOpenEvent.callEvent();
+        if (tradePointOpenEvent.isCancelled())
+            return;
 
         var player = event.getPlayer();
 

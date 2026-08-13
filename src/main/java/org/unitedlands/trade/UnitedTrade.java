@@ -115,7 +115,7 @@ public class UnitedTrade extends JavaPlugin {
             economyProvider = new DefaultEconomyProvider(this, messageProvider);
         }
         Plugin floodgate = Bukkit.getPluginManager().getPlugin("floodgate");
-        if (floodgate != null && vault.isEnabled()) {
+        if (floodgate != null && floodgate.isEnabled()) {
             Logger.log("Enabling floodgate integrations.", "UnitedTrade");
             useFloodgate = true;
         }
