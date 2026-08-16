@@ -26,6 +26,7 @@ import org.unitedlands.utils.Logger;
 import io.papermc.paper.registry.data.dialog.body.DialogBody;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public class TradeOrderBookUtil {
 
@@ -160,7 +161,7 @@ public class TradeOrderBookUtil {
         return new NamespacedKey(UnitedTrade.getInstance(), name);
     }
 
-    public static String getFloodgatePanelContent(ItemStack book) {
+    public static String getFloodgatePanelContent(ItemStack book, List<Component> validationWarnings) {
 
         MessageProvider messageProvider = UnitedTrade.getInstance().getMessageProvider();
         IItemFactory itemFactory = UnitedLib.getInstance().getItemFactory();
@@ -194,6 +195,14 @@ public class TradeOrderBookUtil {
         content += "§l" + messageProvider.get("messages.tradebook.timelimit") + ": §6"
                 + Formatter.formatDuration(order.getTimelimit()) + "§r\n\n";
 
+        if (validationWarnings != null && !validationWarnings.isEmpty()) {
+            for (var warning : validationWarnings) {
+                var plainText = PlainTextComponentSerializer.plainText().serialize(warning);
+                content += "§c" + plainText + "§r\n";
+            }
+            content += "\n";
+        }
+
         var itemStr = "";
         for (var orderItem : order.getRequiredItems()) {
             String material = itemFactory.getDisplayName(orderItem.getItem());
@@ -208,7 +217,7 @@ public class TradeOrderBookUtil {
         return content;
     }
 
-    public static List<DialogBody> getJavaPanelContent(ItemStack book) {
+    public static List<DialogBody> getJavaPanelContent(ItemStack book, List<Component> validationWarnings) {
 
         MessageProvider messageProvider = UnitedTrade.getInstance().getMessageProvider();
 
@@ -262,6 +271,12 @@ public class TradeOrderBookUtil {
             }
         }
 
+        if (validationWarnings != null && !validationWarnings.isEmpty()) {
+            for (var warning : validationWarnings) {
+                dialogBody.add(DialogBody.plainMessage(warning));
+            }
+        }
+
         // Required Items
         var requiredItems = new ArrayList<>(order.getRequiredItems());
         dialogBody.add(DialogBody.plainMessage(
@@ -277,7 +292,7 @@ public class TradeOrderBookUtil {
                             miniMessage.deserialize("<gold>" + amountStr + "</gold><gray>x</gray> " + material)),
                     true, true, 18, 16));
         }
-        
+
         return dialogBody;
     }
 

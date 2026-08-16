@@ -14,6 +14,7 @@ import org.unitedlands.trade.listeners.BookListener;
 import org.unitedlands.trade.listeners.DropoffPointListener;
 import org.unitedlands.trade.listeners.InventoryListener;
 import org.unitedlands.trade.listeners.LecternListener;
+import org.unitedlands.trade.listeners.SelfListener;
 import org.unitedlands.trade.listeners.ServerListener;
 import org.unitedlands.trade.managers.DropoffPointManager;
 import org.unitedlands.trade.managers.OrderTemplateManager;
@@ -72,6 +73,7 @@ public class UnitedTrade extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new DropoffPointListener(this, messageProvider), this);
         getServer().getPluginManager().registerEvents(new LecternListener(this, messageProvider), this);
         getServer().getPluginManager().registerEvents(new ServerListener(this), this);
+        getServer().getPluginManager().registerEvents(new SelfListener(this, messageProvider), this);
         getServer().getPluginManager().registerEvents(new InventoryListener(this, messageProvider), this);
         getServer().getPluginManager().registerEvents(new BookListener(this), this);
     }

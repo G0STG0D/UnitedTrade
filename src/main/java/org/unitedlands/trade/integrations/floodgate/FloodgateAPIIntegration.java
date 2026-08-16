@@ -1,5 +1,7 @@
 package org.unitedlands.trade.integrations.floodgate;
 
+import java.util.List;
+
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.geysermc.cumulus.form.SimpleForm;
@@ -8,6 +10,8 @@ import org.geysermc.floodgate.api.player.FloodgatePlayer;
 import org.unitedlands.trade.UnitedTrade;
 import org.unitedlands.trade.classes.TradePoint;
 import org.unitedlands.trade.utils.TradeOrderBookUtil;
+
+import net.kyori.adventure.text.Component;
 
 public class FloodgateAPIIntegration {
 
@@ -27,8 +31,8 @@ public class FloodgateAPIIntegration {
         return instance.isFloodgatePlayer(player.getUniqueId());
     }
 
-    public void sendTradePointOrderPanel(Player player, TradePoint tradePoint, ItemStack book) {
-        var content = TradeOrderBookUtil.getFloodgatePanelContent(book);
+    public void sendTradePointOrderPanel(Player player, TradePoint tradePoint, ItemStack book, List<Component> validationWarnigs) {
+        var content = TradeOrderBookUtil.getFloodgatePanelContent(book, validationWarnigs);
         FloodgatePlayer floodgateplayer = FloodgateApi.getInstance().getPlayer(player.getUniqueId());
         floodgateplayer.sendForm(
                 SimpleForm.builder()
@@ -39,7 +43,7 @@ public class FloodgateAPIIntegration {
     }
 
     public void sendBookPanel(Player player, ItemStack book) {
-        var content = TradeOrderBookUtil.getFloodgatePanelContent(book);
+        var content = TradeOrderBookUtil.getFloodgatePanelContent(book, null);
         FloodgatePlayer floodgateplayer = FloodgateApi.getInstance().getPlayer(player.getUniqueId());
         floodgateplayer.sendForm(
                 SimpleForm.builder()

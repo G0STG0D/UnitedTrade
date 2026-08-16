@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.unitedlands.trade.UnitedTrade;
 import org.unitedlands.trade.classes.MessageProvider;
 import org.unitedlands.trade.classes.TradePoint;
-import org.unitedlands.trade.classes.events.TradePointOpenEvent;
+import org.unitedlands.trade.classes.events.TradePointValidationEvent;
 import org.unitedlands.trade.integrations.floodgate.FloodgateAPIIntegration;
 import org.unitedlands.trade.utils.TradeOrderBookUtil;
 import io.papermc.paper.dialog.Dialog;
@@ -50,15 +50,13 @@ public class LecternListener implements Listener {
 
         event.setCancelled(true);
 
-        var tradePointOpenEvent = new TradePointOpenEvent(event.getPlayer(), tradePoint);
-        tradePointOpenEvent.callEvent();
-        if (tradePointOpenEvent.isCancelled())
-            return;
+        var validationEvent = new TradePointValidationEvent(event.getPlayer(), tradePoint);
+        validationEvent.callEvent();
 
         var player = event.getPlayer();
 
-        if (!plugin.getOrderTracker().hasPickupRequirements(player, tradePoint))
-            return;
+        // if (!plugin.getOrderTracker().hasPickupRequirements(player, tradePoint))
+        //     return;
 
         var book = tradePoint.getBook();
         if (book == null) {
@@ -67,21 +65,21 @@ public class LecternListener implements Listener {
 
         // Show different UIs to Java and Bedrock players if floodgate is present
         if (!plugin.useFloodgate()) {
-            handleJavaDialogue(player, tradePoint, book);
+            handleJavaDialogue(player, tradePoint, book, validationEvent);
         } else {
             var floodgate = new FloodgateAPIIntegration(plugin);
             if (!floodgate.isBedrockPlayer(player))
-                handleJavaDialogue(player, tradePoint, book);
+                handleJavaDialogue(player, tradePoint, book, validationEvent);
             else {
-                handleFloodgatePanel(floodgate, player, tradePoint, book);
+                handleFloodgatePanel(floodgate, player, tradePoint, book, validationEvent);
             }
         }
 
     }
 
-    private void handleJavaDialogue(Player player, TradePoint tradePoint, ItemStack book) {
+    private void handleJavaDialogue(Player player, TradePoint tradePoint, ItemStack book, TradePointValidationEvent validationEvent) {
 
-        List<DialogBody> dialogBody = TradeOrderBookUtil.getJavaPanelContent(book);
+        List<DialogBody> dialogBody = TradeOrderBookUtil.getJavaPanelContent(book, validationEvent.getMessages());
 
         Dialog dialog = Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(Component.text("Trade Order"))
@@ -112,8 +110,8 @@ public class LecternListener implements Listener {
     }
 
     private void handleFloodgatePanel(FloodgateAPIIntegration floodgate, Player player, TradePoint tradePoint,
-            ItemStack book) {
-        floodgate.sendTradePointOrderPanel(player, tradePoint, book);
+            ItemStack book, TradePointValidationEvent validationEvent) {
+        floodgate.sendTradePointOrderPanel(player, tradePoint, book, validationEvent.getMessages());
     }
 
     @EventHandler

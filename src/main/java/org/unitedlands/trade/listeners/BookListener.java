@@ -66,7 +66,7 @@ public class BookListener implements Listener {
 
     private void handleJavaDialogue(Player player, ItemStack book) {
 
-        List<DialogBody> dialogBody = TradeOrderBookUtil.getJavaPanelContent(book);
+        List<DialogBody> dialogBody = TradeOrderBookUtil.getJavaPanelContent(book, null);
 
         Dialog dialog = Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(Component.text("Trade Order"))

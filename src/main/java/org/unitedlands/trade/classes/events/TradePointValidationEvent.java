@@ -1,21 +1,27 @@
 package org.unitedlands.trade.classes.events;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.entity.Player;
-import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.unitedlands.trade.classes.TradePoint;
 
-public class TradePointOpenEvent extends Event implements Cancellable {
+import net.kyori.adventure.text.Component;
+
+public class TradePointValidationEvent extends Event {
 
     private static final HandlerList handlers = new HandlerList();
-
-    private boolean cancelled;
 
     private Player player;
     private TradePoint tradePoint;
 
-    public TradePointOpenEvent(Player player, TradePoint tradePoint) {
+    private boolean isValid = true;
+
+    private List<Component> messages = new ArrayList<>();
+
+    public TradePointValidationEvent(Player player, TradePoint tradePoint) {
         this.player = player;
         this.tradePoint = tradePoint;
     }
@@ -45,15 +51,20 @@ public class TradePointOpenEvent extends Event implements Cancellable {
         this.tradePoint = tradePoint;
     }
 
-    @Override
-    public boolean isCancelled() {
-        return cancelled;
+    public boolean isValid() {
+        return isValid;
     }
 
-    @Override
-    public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
+    public void setValid(boolean isValid) {
+        this.isValid = isValid;
+    }
 
+    public List<Component> getMessages() {
+        return messages;
+    }
+
+    public void setMessages(List<Component> messages) {
+        this.messages = messages;
     }
 
 }

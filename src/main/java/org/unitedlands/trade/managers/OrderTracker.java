@@ -19,9 +19,9 @@ import org.unitedlands.trade.UnitedTrade;
 import org.unitedlands.trade.classes.MessageProvider;
 import org.unitedlands.trade.classes.OrderTrackerItem;
 import org.unitedlands.trade.classes.TradePoint;
-import org.unitedlands.trade.classes.events.TradeOrderBookPreTakeEvent;
 import org.unitedlands.trade.classes.events.TradeOrderCompletedEvent;
 import org.unitedlands.trade.classes.events.TradeOrderFailedEvent;
+import org.unitedlands.trade.classes.events.TradePointValidationEvent;
 import org.unitedlands.trade.utils.JsonUtils;
 import org.unitedlands.trade.utils.TradeOrderBookUtil;
 import org.unitedlands.utils.Formatter;
@@ -44,77 +44,81 @@ public class OrderTracker {
         this.messageProvider = messageProvider;
     }
 
-    public boolean hasPickupRequirements(Player player, TradePoint tradePoint) {
+    // public boolean hasPickupRequirements(Player player, TradePoint tradePoint) {
 
-        if (tradePoint.isPlayerOnPickupCooldown(player.getUniqueId())) {
-            var cooldownMillis = tradePoint.getPickupCooldown() * 1000;
-            var remaining = tradePoint.getPlayerPickupCooldownRemaining(player.getUniqueId());
-            Messenger.sendMessage(player, messageProvider.get("messages.tradepoint.on-cooldown"),
-                    Map.of("cooldown", Formatter.formatDuration(cooldownMillis),
-                            "remaining", Formatter.formatDuration(remaining)),
-                    messageProvider.get("messages.prefix"));
-            return false;
-        }
+    // if (tradePoint.isPlayerOnPickupCooldown(player.getUniqueId())) {
+    // var cooldownMillis = tradePoint.getPickupCooldown() * 1000;
+    // var remaining =
+    // tradePoint.getPlayerPickupCooldownRemaining(player.getUniqueId());
+    // Messenger.sendMessage(player,
+    // messageProvider.get("messages.tradepoint.on-cooldown"),
+    // Map.of("cooldown", Formatter.formatDuration(cooldownMillis),
+    // "remaining", Formatter.formatDuration(remaining)),
+    // messageProvider.get("messages.prefix"));
+    // return false;
+    // }
 
-        if (tradePoint.getRequiredPermissions() != null) {
-            var permissionsArray = tradePoint.getRequiredPermissions().split(",");
-            boolean playerHasAllRequiredPermissions = true;
-            for (var permString : permissionsArray) {
-                var perm = permString.trim();
-                if (!player.hasPermission(perm))
-                    playerHasAllRequiredPermissions = false;
-            }
+    // if (tradePoint.getRequiredPermissions() != null) {
+    // var permissionsArray = tradePoint.getRequiredPermissions().split(",");
+    // boolean playerHasAllRequiredPermissions = true;
+    // for (var permString : permissionsArray) {
+    // var perm = permString.trim();
+    // if (!player.hasPermission(perm))
+    // playerHasAllRequiredPermissions = false;
+    // }
 
-            if (!playerHasAllRequiredPermissions) {
-                if (tradePoint.getRequiredPermissionsError() != null) {
-                    Messenger.sendMessage(player, "<red>" + tradePoint.getRequiredPermissionsError() + "</red>", null,
-                            messageProvider.get("messages.prefix"));
-                    return false;
-                } else {
-                    Messenger.sendMessage(player, messageProvider.get("messages.tradepoint.permission-error"), null,
-                            messageProvider.get("messages.prefix"));
-                    return false;
-                }
-            }
-        }
+    // if (!playerHasAllRequiredPermissions) {
+    // if (tradePoint.getRequiredPermissionsError() != null) {
+    // Messenger.sendMessage(player, "<red>" +
+    // tradePoint.getRequiredPermissionsError() + "</red>", null,
+    // messageProvider.get("messages.prefix"));
+    // return false;
+    // } else {
+    // Messenger.sendMessage(player,
+    // messageProvider.get("messages.tradepoint.permission-error"), null,
+    // messageProvider.get("messages.prefix"));
+    // return false;
+    // }
+    // }
+    // }
 
-        if (tradePoint.getBlacklistedPermissions() != null) {
-            var permissionsArray = tradePoint.getBlacklistedPermissions().split(",");
-            boolean playerHasBlacklistedPermission = false;
-            for (var permString : permissionsArray) {
-                var perm = permString.trim();
-                if (player.hasPermission(perm))
-                    playerHasBlacklistedPermission = true;
-            }
+    // if (tradePoint.getBlacklistedPermissions() != null) {
+    // var permissionsArray = tradePoint.getBlacklistedPermissions().split(",");
+    // boolean playerHasBlacklistedPermission = false;
+    // for (var permString : permissionsArray) {
+    // var perm = permString.trim();
+    // if (player.hasPermission(perm))
+    // playerHasBlacklistedPermission = true;
+    // }
 
-            if (playerHasBlacklistedPermission) {
-                if (tradePoint.getBlacklistedPermissionsError() != null) {
-                    Messenger.sendMessage(player, "<red>" + tradePoint.getBlacklistedPermissionsError() + "</red>",
-                            null,
-                            messageProvider.get("messages.prefix"));
-                    return false;
-                } else {
-                    Messenger.sendMessage(player, messageProvider.get("messages.tradepoint.permission-error"), null,
-                            messageProvider.get("messages.prefix"));
-                    return false;
-                }
-            }
-        }
+    // if (playerHasBlacklistedPermission) {
+    // if (tradePoint.getBlacklistedPermissionsError() != null) {
+    // Messenger.sendMessage(player, "<red>" +
+    // tradePoint.getBlacklistedPermissionsError() + "</red>",
+    // null,
+    // messageProvider.get("messages.prefix"));
+    // return false;
+    // } else {
+    // Messenger.sendMessage(player,
+    // messageProvider.get("messages.tradepoint.permission-error"), null,
+    // messageProvider.get("messages.prefix"));
+    // return false;
+    // }
+    // }
+    // }
 
-        return true;
-    }
+    // return true;
+    // }
 
     public boolean acceptTradeOrder(Player player, TradePoint tradePoint, ItemStack book) {
 
-        if (!hasPickupRequirements(player, tradePoint))
-            return false;
+        var validationEvent = new TradePointValidationEvent(player, tradePoint);
+        validationEvent.callEvent();
 
-        var preTakeEvent = new TradeOrderBookPreTakeEvent(player, tradePoint);
-        preTakeEvent.callEvent();
-
-        // Some plugin may cancel the event, e.g. due to lack of reputation or wars,
-        // preventing players from taking order from this trade point
-        if (preTakeEvent.isCancelled()) {
+        if (!validationEvent.isValid()) {
+            for (var message : validationEvent.getMessages()) {
+                Messenger.send(player, message);
+            }
             return false;
         }
 
